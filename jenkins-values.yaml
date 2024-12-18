@@ -1,6 +1,0 @@
-peristence:
-  enabled: true
-  accessMode: "ReadWriteOnce"
-  size: "10Gi"
-controller:
-  adminSecret: false
