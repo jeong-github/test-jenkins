@@ -1,36 +1,45 @@
-pipeline { 
-    environment { 
-        repository = "jeonghyuck/jenkins-test"  //docker hub id와 repository 이름
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-jenkins') // jenkins에 등록해 놓은 docker hub credentials 이름
-        dockerImage = '' 
-  }
-  agent any 
-  stages { 
-      stage('Building our image') { 
-          steps { 
-              script { 
-                  sh "cp /var/lib/jenkins/workspace/sue_jenkins_project/build/libs/sue-member-0.0.1-SNAPSHOT.war /var/lib/jenkins/workspace/pipeline/" // war 파일을 현재 위치로 복사 
-                  dockerImage = docker.build repository + ":$BUILD_NUMBER" 
-              }
-          } 
-      }
-      stage('Login'){
-          steps{
-              sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin' // docker hub 로그인
-          }
-      }
-      stage('Deploy our image') { 
-          steps { 
-              script {
-                sh 'docker push $repository:$BUILD_NUMBER' //docker push
-              } 
-          }
-      } 
-      stage('Cleaning up') { 
-		  steps { 
-              sh "docker rmi $repository:$BUILD_NUMBER" // docker image 제거
-          }
-      } 
-  }
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = 'nginx'
+        DOCKER_REGISTRY = 'jeonghyuck/jenkins-test'
+        REGISTRY_CREDENTIALS = 'dockerhub-jenkins'
     }
     
+    stages {
+        stage('Checkout') {
+            steps {
+                // Git에서 소스 코드 가져오기
+                checkout scm
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                // Docker 이미지를 빌드
+                script {
+                    docker.build("${DOCKER_IMAGE}:latest")
+                }
+            }
+        }
+        
+        stage('Push to Docker Registry') {
+            steps {
+                // Docker 레지스트리에 이미지 푸시
+                script {
+                    docker.withRegistry("https://${DOCKER_REGISTRY}", "${REGISTRY_CREDENTIALS}") {
+                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // 빌드 후 클린업
+            sh 'docker rmi ${DOCKER_IMAGE}:latest'
+        }
+    }
+}
