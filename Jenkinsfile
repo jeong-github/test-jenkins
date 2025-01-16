@@ -1,15 +1,11 @@
 pipeline {
     agent {
-        docker {
-            label 'main-host'
-            image 'docker:20.10.24'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        docker { image 'node:22.13.0-alpine3.21' }
     }
     stages {
-        stage('Build Docker Image') {
+        stage('Test') {
             steps {
-                sh 'docker build -t nginx:latest .'
+                sh 'node --eval "console.log(process.platform,process.env.CI)"'
             }
         }
     }
