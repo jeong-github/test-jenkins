@@ -1,6 +1,7 @@
 pipeline {
     agent {
         docker {
+            label 'main-host'
             image 'docker:20.10.24'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
