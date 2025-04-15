@@ -1,16 +1,24 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_USER = 'jeonghyuck'
-        IMAGE = 'jeonghyuck/jenkins-test:latest'
-        CREDS_ID = 'dockerhub-jenkins'
+        IMG_NAME = 'jeonghyuck/jenkins-test'
+        DOCKER_REPO = 'joska99/labs-images'
     }
     stages {
-        stage('Docker Build & Push') {
+        stage('build') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', CREDS_ID) {
-                        docker.build(IMAGE).push()
+                        sh 'docker build -t ${IMG_NAME} .'
+                        sh 'docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}'
+                }
+            }
+        }
+        stage('push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DockerHub-LG', passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
+                    script {
+                        sh 'echo ${PSWD} | docker login -u ${LOGIN} --password-stdin'
+                        sh 'docker push ${DOCKER_REPO}:${IMG_NAME}'
                     }
                 }
             }
