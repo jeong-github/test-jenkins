@@ -1,14 +1,18 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:20.10.24'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+    agent any
+    environment {
+        DOCKERHUB_USER = 'jeonghyuck'
+        IMAGE = 'jeonghyuck/jenkins-test:latest'
+        CREDS_ID = 'dockerhub-jenkins'
     }
     stages {
-        stage('Build Docker Image') {
+        stage('Docker Build & Push') {
             steps {
-                sh 'docker build -t nginx:latest .'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', CREDS_ID) {
+                        docker.build(IMAGE).push()
+                    }
+                }
             }
         }
     }
