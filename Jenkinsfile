@@ -1,61 +1,16 @@
-podTemplate(label: 'docker-build', 
-  containers: [
-    containerTemplate(
-      name: 'git',
-      image: 'alpine/git',
-      command: 'cat',
-      ttyEnabled: true
-    ),
-    containerTemplate(
-      name: 'docker',
-      image: 'docker',
-      command: 'cat',
-      ttyEnabled: true
-    ),
-  ],
-  volumes: [ 
-    hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'), 
-  ]
-) {
-    node('docker-build') {
-        def dockerHubCred = 'dockerhub-jenkins'
-        def appImage
-        
-        stage('Checkout'){
-            container('git'){
-                checkout scm
+pipeline {
+    agent any
+    stages {
+        stage('build') {
+            steps {
             }
         }
-        
-        stage('Build'){
-            container('docker'){
-                script {
-                    appImage = docker.build("jeonghyuck/jenkins-test")
-                }
+        stage('test'){
+            steps{
             }
         }
-        
-        stage('Test'){
-            container('docker'){
-                script {
-                    appImage.inside {
-                        sh 'npm install'
-                        sh 'npm test'
-                    }
-                }
+        stage('doker build'){
+            steps{
             }
-        }
-
-        stage('Push'){
-            container('docker'){
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', dockerHubCred){
-                        appImage.push("${env.BUILD_NUMBER}")
-                        appImage.push("latest")
-                    }
-                }
-            }
-        }
     }
-    
 }
