@@ -1,27 +1,61 @@
-pipeline {
-    agent any
-    environment {
-        IMG_NAME = 'jeonghyuck/jenkins-test'
-        DOCKER_REPO = 'joska99/labs-images'
-    }
-    stages {
-        stage('build') {
-            steps {
+podTemplate(label: 'docker-build', 
+  containers: [
+    containerTemplate(
+      name: 'git',
+      image: 'alpine/git',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+    containerTemplate(
+      name: 'docker',
+      image: 'docker',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+  ],
+  volumes: [ 
+    hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'), 
+  ]
+) {
+    node('docker-build') {
+        def dockerHubCred = 'dockerhub-jenkins'
+        def appImage
+        
+        stage('Checkout'){
+            container('git'){
+                checkout scm
+            }
+        }
+        
+        stage('Build'){
+            container('docker'){
                 script {
-                        sh 'docker build -t ${IMG_NAME} .'
-                        sh 'docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}'
+                    appImage = docker.build("jeonghyuck/jenkins-test")
                 }
             }
         }
-        stage('push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'DockerHub-LG', passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
-                    script {
-                        sh 'echo ${PSWD} | docker login -u ${LOGIN} --password-stdin'
-                        sh 'docker push ${DOCKER_REPO}:${IMG_NAME}'
+        
+        stage('Test'){
+            container('docker'){
+                script {
+                    appImage.inside {
+                        sh 'npm install'
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        stage('Push'){
+            container('docker'){
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', dockerHubCred){
+                        appImage.push("${env.BUILD_NUMBER}")
+                        appImage.push("latest")
                     }
                 }
             }
         }
     }
+    
 }
