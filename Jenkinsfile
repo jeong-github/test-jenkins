@@ -1,7 +1,7 @@
 pipeline {
-    agent {
-        label 'worker02'  // Docker가 설치된 외부 노드 지정
-    }
+    agent { 
+                node { label 'worker02' }              
+          }
 
     environment {
         DOCKERHUB_USER = 'jeonghyuck'
