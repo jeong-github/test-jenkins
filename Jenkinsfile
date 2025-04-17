@@ -22,7 +22,7 @@ pipeline {
                 script {
                     // Dockerfile이 현재 디렉토리에 존재해야 함
                     //sh 'docker build -t $REPOSITORY:$BUILD_NUMBER .'
-                    sh 'docker build -t jeonghyuck/jenkins-test:version1 .'
+                    sh 'docker build -t jeonghyuck/jenkins-test:version2 .'
                 }
             }
         }
@@ -39,7 +39,7 @@ pipeline {
         stage('Docker 이미지 푸시') {
             steps {
                 script {
-                    sh 'docker push jeonghyuck/jenkins-test:version1'
+                    sh 'docker push jeonghyuck/jenkins-test:version2'
                 }
             }
         }
@@ -47,7 +47,7 @@ pipeline {
         stage('이미지 정리') {
             steps {
                 script {
-                    sh 'docker rmi jeonghyuck/jenkins-test:version1'
+                    sh 'docker rmi jeonghyuck/jenkins-test:version2'
                 }
             }
         }
