@@ -2,27 +2,28 @@ pipeline {
     agent any
 
     environment {
-        // Docker Hub ID와 레포지토리 이름 (예: jeonghyuck/jenkins-test)
+        // DockerHub 저장소
         REPOSITORY = "jeonghyuck/jenkins-test"
 
-        // Jenkins에 미리 등록한 Docker Hub 자격 증명 ID
+        // Jenkins에서 등록한 DockerHub 크레덴셜
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-jenkins')
+
+        // GitOps 저장소용 SSH 크레덴셜
+        GIT_CREDENTIALS_ID = 'jenkins-ssh-private'
     }
 
     stages {
-        stage('Clone Source') {
+        stage('Checkout Source') {
             steps {
-                echo "Git 또는 파일 복사를 여기에 작성하세요"
-                // git 'https://github.com/yourname/your-repo.git'
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Dockerfile이 현재 디렉토리에 존재해야 함
                     sh 'docker build -t $REPOSITORY:$BUILD_NUMBER .'
-                    //sh 'docker build -t jeonghyuck/jenkins-test:version2 .'
+                    //sh 'docker tag $REPOSITORY:$BUILD_NUMBER $REPOSITORY:latest'
                 }
             }
         }
@@ -30,7 +31,6 @@ pipeline {
         stage('Docker Hub 로그인') {
             steps {
                 script {
-                    // Jenkins Credentials Plugin 사용
                     sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                 }
             }
@@ -44,12 +44,41 @@ pipeline {
             }
         }
 
-        stage('이미지 정리') {
+        stage('GitOps Deploy Commit') {
+            steps {
+                sshagent(credentials: [env.GIT_CREDENTIALS_ID]) {
+                    script {
+                        sh '''
+                            set -e
+                            export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
+
+                            // git clone git@github.com:cure4itches/docker-hello-world-deployment.git
+                            git clone git@github.com:jeong-github/test-git.git
+                            cd test-git
+                            git config user.email "cure4itches@gmail.com"
+                            git config user.name "cure4itches"
+
+                            # sed를 사용하여 이미지 태그 변경
+                            sed -i "s|jeonghyuck/jenkins-test:[a-zA-Z0-9._-]*|jeonghyuck/jenkins-test:${BUILD_NUMBER}|" deploy.yaml
+
+                            git add .
+                            git commit -m "Update image tag to ${BUILD_NUMBER}"
+                            git push origin main
+                        '''
+                    }
+                }
+            }
+        }
+
+
+        stage('Clean Up Docker Image') {
             steps {
                 script {
-                    sh 'docker rmi $REPOSITORY:$BUILD_NUMBER'
+                    sh 'docker rmi $REPOSITORY:$BUILD_NUMBER || true'
+                    sh 'docker rmi $REPOSITORY:latest || true'
                 }
             }
         }
     }
 }
+
