@@ -55,8 +55,8 @@ pipeline {
                             // git clone git@github.com:cure4itches/docker-hello-world-deployment.git
                             git clone git@github.com:jeong-github/test-git.git
                             cd test-git
-                            git config user.email "cure4itches@gmail.com"
-                            git config user.name "cure4itches"
+                            git config user.email "jenkins@example.com"
+                            git config user.name "jenkins@example.com"
 
                             # sed를 사용하여 이미지 태그 변경
                             sed -i "s|jeonghyuck/jenkins-test:[a-zA-Z0-9._-]*|jeonghyuck/jenkins-test:${BUILD_NUMBER}|" deploy.yaml
